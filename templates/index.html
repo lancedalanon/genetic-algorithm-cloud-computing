@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Loop Control</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        button {
+            display: block;
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+
+        #live-data {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Loop Control</h1>
+
+        <!-- Buttons to control the API -->
+        <button id="start-btn">Start Loop</button>
+        <button id="stop-btn">Stop Loop</button>
+
+        <!-- Live data section -->
+        <div id="live-data">Waiting for data...</div>
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const liveData = document.getElementById('live-data');
+            const socket = io('http://localhost:5000');
+    
+            // Listen for updates from the server
+            socket.on('update_data', (data) => {
+                liveData.textContent = 'Current Data: ' + data.data.join(', ');
+            });
+    
+            // Button event listeners to call Flask API endpoints
+            document.getElementById('start-btn').addEventListener('click', () => {
+                fetch('http://localhost:5000/start', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+    
+            document.getElementById('stop-btn').addEventListener('click', () => {
+                fetch('http://localhost:5000/stop', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        liveData.textContent = 'Waiting for data...'; // Reset display
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+    </script>    
+</body>
+</html>

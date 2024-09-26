@@ -1,5 +1,4 @@
 import random
-import time
 from deap import base, creator, tools
 
 # Define the problem (maximization of a simple objective function)

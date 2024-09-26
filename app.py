@@ -3,13 +3,13 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import threading
 import time
-import process 
+import process  # Ensure this module is correctly implemented
 import webbrowser
-import os 
+from engineio.async_drivers import gevent
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='gevent')  # Use gevent for asynchronous socket handling
 
 # Global variable to control the data processing thread
 processing_thread = None
@@ -82,4 +82,4 @@ def metrics():
 
 if __name__ == '__main__':
     webbrowser.open('http://127.0.0.1:5000')
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=False)

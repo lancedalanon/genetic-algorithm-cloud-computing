@@ -1,27 +1,51 @@
 from flask import Flask, jsonify, render_template
 from flask_cors import CORS
-from flask_socketio import SocketIO  # Import SocketIO
+from flask_socketio import SocketIO, emit
 import threading
 import time
+import process  # Your GA processing module
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app)  # Initialize SocketIO
+socketio = SocketIO(app)
 
-# Array and loop management
-array = [1, 2, 3]
-global is_running, loop_thread
-lock = threading.Lock()
+# Global variable to control the data processing thread
+processing_thread = None
+is_processing = False
+previous_fitness = 0  # Initialize previous fitness for improvement calculation
 
-def start_loop():
-    """Continuously rearranges the array every second while is_running is True."""
-    global array, is_running
-    while is_running:
-        with lock:
-            array.append(array.pop(0))  # Rotate array
-            print(f"Array rearranged: {array}")
-            socketio.emit('update_data', {'data': array})  # Emit updated array to clients
-        time.sleep(1)
+def process_data():
+    """Function to simulate data processing and emit metrics."""
+    global is_processing, previous_fitness
+
+    while is_processing:
+        start_time = time.time()
+        performance_metrics = process.run_genetic_algorithm()  # Call your GA processing function
+        elapsed_time = time.time() - start_time  # Calculate time taken for this run
+
+        # Calculate improvement rate and average time per generation
+        if previous_fitness == 0:
+            improvement_rate = 0  # Avoid division by zero on the first run
+        else:
+            improvement_rate = (performance_metrics["fitness_value"] - previous_fitness) / previous_fitness * 100
+        
+        avg_time_per_gen = elapsed_time / performance_metrics["generations"]
+
+        # Update previous fitness for the next iteration
+        previous_fitness = performance_metrics["fitness_value"]
+
+        metrics = {
+            "response_time": elapsed_time,
+            "performance_metrics": performance_metrics,
+            "improvement_rate": improvement_rate,
+            "avg_time_per_generation": avg_time_per_gen
+        }
+
+        # Emit the metrics to the client
+        socketio.emit('metrics', metrics)
+
+        # Sleep for a short period to control update frequency (e.g., every 0.2 seconds)
+        time.sleep(0.2)
 
 @app.route('/')
 def index():
@@ -30,33 +54,29 @@ def index():
 
 @app.route('/start', methods=['POST'])
 def start():
-    """Start the looping process to rearrange the array."""
-    if is_running:
-        # If already running, stop it before starting a new one
-        stop()  # Call the stop function
-    is_running = True
-    loop_thread = threading.Thread(target=start_loop)
-    loop_thread.start()
-    return jsonify({"message": "Loop started."}), 200
+    """Start the data processing."""
+    global is_processing, processing_thread
+    if not is_processing:
+        is_processing = True
+        processing_thread = threading.Thread(target=process_data)
+        processing_thread.start()
+        return jsonify({"message": "Processing started."}), 200
+    return jsonify({"message": "Processing is already running."}), 400
 
 @app.route('/stop', methods=['POST'])
 def stop():
-    """Stop the looping process."""
-    global is_running  # Declare as global first
-    if is_running:
-        is_running = False
-        return jsonify({"message": "Loop stopped."}), 200
-    return jsonify({"message": "Loop is not running."}), 400
+    """Stop the data processing."""
+    global is_processing
+    if is_processing:
+        is_processing = False
+        processing_thread.join()  # Wait for the thread to finish
+        return jsonify({"message": "Processing stopped."}), 200
+    return jsonify({"message": "No processing is currently running."}), 400
 
 @app.route('/metrics', methods=['GET'])
 def metrics():
-    """Return the current state of the array."""
-    with lock:
-        current_array = array.copy()
-    return jsonify({"current_array": current_array}), 200
+    """Return the latest metrics (could be extended for more details)."""
+    return jsonify({"message": "Metrics endpoint."}), 200
 
 if __name__ == '__main__':
-    is_running = False  # Ensure starting state is known
-    loop_thread = None
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
-
+    socketio.run(app, debug=True)

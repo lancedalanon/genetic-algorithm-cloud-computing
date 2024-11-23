@@ -31,7 +31,7 @@ This project demonstrates the application of genetic algorithms for real-time da
 
 Make sure you have the following installed:
 
-- **Python** (>= 3.6)
+- **Python** (>= 3.10)
 - **pip** (Python package installer)
 
 ### Install Dependencies

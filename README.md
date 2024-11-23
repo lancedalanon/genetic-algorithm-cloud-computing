@@ -69,10 +69,13 @@ Open your browser. The application should automatically launch and be accessible
 http://127.0.0.1:5000
 
 ## API Endpoints
-/ (GET): Serves the main web page (index.html).
-/start (POST): Starts the real-time data processing using the genetic algorithm.
-/stop (POST): Stops the data processing.
-/metrics (GET): Retrieves the latest metrics.
+
+| Endpoint       | Method | Description                                                       |
+|----------------|--------|-------------------------------------------------------------------|
+| `/`            | GET    | Serves the main web page (`index.html`).                         |
+| `/start`       | POST   | Starts the real-time data processing using the genetic algorithm. |
+| `/stop`        | POST   | Stops the data processing.                                        |
+| `/metrics`     | GET    | Retrieves the latest metrics.                                     |
 
 ## Frontend
 The frontend is built using HTML, CSS, and JavaScript to visualize the real-time data and metrics processed by the Flask API. 
